@@ -6852,6 +6852,7 @@ dependencies = [
  "rustix 1.1.6",
  "serde",
  "serde_json",
+ "tempfile",
  "toml",
  "vectorcraft-brush",
  "vectorcraft-cad",

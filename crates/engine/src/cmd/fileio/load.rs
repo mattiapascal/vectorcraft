@@ -616,6 +616,15 @@ pub struct ReadFile {
     links: Resolved,
 }
 
+impl ReadFile {
+    /// Name a decoded document before opening it, independently of its save path.
+    #[must_use]
+    pub fn with_title(mut self, title: String) -> Self {
+        self.loaded.doc.title = title;
+        self
+    }
+}
+
 #[cfg(test)]
 impl ReadFile {
     /// The document as it was read, before it opens.

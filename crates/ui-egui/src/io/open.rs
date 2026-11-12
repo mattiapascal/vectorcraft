@@ -320,8 +320,10 @@ pub fn open_dialog(app: &mut VectorcraftApp) -> Result<(), String> {
     if crate::picks::open_async(app) {
         return Ok(());
     }
-    let path =
-        pick_open(app, &FilePick { filters: FilePick::filters(fileio::open_filters()), folder: open_dialog_folder(app), ..Default::default() })?;
+    let filters = FilePick::filters(fileio::open_filters());
+    #[cfg(not(target_arch = "wasm32"))]
+    let filters = crate::opening::fh11::open_filters(filters);
+    let path = pick_open(app, &FilePick { filters, folder: open_dialog_folder(app), ..Default::default() })?;
     open_reporting(app, &path).map(|_| ())
 }
 
@@ -515,6 +517,13 @@ fn open_file_with(app: &mut VectorcraftApp, path: &str, background: bool, p: &Va
     }
     if app.opening.pending.iter().any(|p| same_open_path(&p.path, path)) {
         return Ok(Value::Null);
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    if crate::opening::fh11::matches(path) && let Some(converter) = crate::opening::fh11::configured() {
+        if app.automation_asked() || vectorcraft_engine::file_access::current().is_some() {
+            return Err("Open FreeHand MX files through the desktop app's File menu.".into());
+        }
+        return crate::opening::fh11::start(app, path, converter);
     }
     // A shortcut set is read by Import Shortcut Set, up to its reader's cap.
     if dialogs::shortcut_import::is_kys(path) {

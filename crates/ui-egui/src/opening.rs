@@ -18,6 +18,9 @@ use vectorcraft_engine::file_access::ScopeHandle;
 use crate::VectorcraftApp;
 use crate::export_progress::{self, Pressed};
 
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) mod fh11;
+
 pub use crate::export_progress::DELAY;
 
 /// A file being read.
@@ -73,35 +76,39 @@ pub fn start(app: &mut VectorcraftApp, path: &str, bytes: Vec<u8>) -> Result<Val
 
 /// [`start`] with the `document.open` options in `params` (`importer` and its `params`).
 pub fn start_with(app: &mut VectorcraftApp, path: &str, bytes: Vec<u8>, params: Value) -> Result<Value, Vec<u8>> {
-    let (tx, done) = channel();
     let bytes = Arc::new(bytes);
     let (name, file) = (path.to_string(), bytes.clone());
     // Update Links (Preferences › File Handling) applies there as it is set now.
     let update_links = app.session.prefs.update_links == "automatically";
     let low_res_proxy_eps = app.session.prefs.low_res_proxy_eps;
+    start_read(app, path, move || {
+        fileio::read_for_open(&name, &file, Some(name.clone()), &params, update_links, low_res_proxy_eps).map_err(|e| e.to_string())
+    })
+    .map_err(|_| Arc::try_unwrap(bytes).unwrap_or_else(|b| b.to_vec()))
+}
+
+fn start_read(
+    app: &mut VectorcraftApp,
+    path: &str,
+    read: impl FnOnce() -> Result<ReadFile, String> + Send + 'static,
+) -> Result<Value, String> {
+    let (tx, done) = channel();
     // The automation roots in force here are in force there.
     let scope = ScopeHandle::capture();
     let opener = scope.clone();
     let token = CancelToken::new();
     let raised = token.clone();
-    let spawned = std::thread::Builder::new().name("vectorcraft-open".into()).spawn(move || {
+    std::thread::Builder::new().name("vectorcraft-open".into()).spawn(move || {
         let r = scope
             .run(|| {
                 vectorcraft_engine::guard::catch_panic(|| {
-                    cancel::scope(&raised, None, || {
-                        fileio::read_for_open(&name, &file, Some(name.clone()), &params, update_links, low_res_proxy_eps).map_err(|e| e.to_string())
-                    })
+                    cancel::scope(&raised, None, read)
                 })
             })
             .unwrap_or_else(|msg| Err(format!("internal error: {msg} (please report this bug)")));
-        // The file's bytes go before the document is handed over.
-        drop(file);
         // The app may have quit meanwhile: nothing to hand it to.
         let _ = tx.send(r);
-    });
-    if spawned.is_err() {
-        return Err(Arc::try_unwrap(bytes).unwrap_or_else(|b| b.to_vec()));
-    }
+    }).map_err(|e| format!("couldn't start the file reader: {e}"))?;
     let label = format!("Opening {}", fileio::file_name(path));
     app.opening.next_id += 1;
     let id = app.opening.next_id;

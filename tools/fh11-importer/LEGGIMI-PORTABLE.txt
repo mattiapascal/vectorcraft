@@ -1,0 +1,36 @@
+FreeHand Importer - versione personale Windows x64
+
+Aprire FreeHandImporter.exe (oppure Avvia Importatore.cmd).
+Python e Tkinter sono gia inclusi: non occorre installarli sugli altri PC.
+Conservare insieme TUTTA la cartella, compresi _internal, build e .runtime.
+La cartella puo essere rinominata o copiata su un disco o una condivisione di rete.
+Non serve Tensai, Illustrator o FreeHand per la conversione in VectorCraft.
+
+VectorCraft deve essere installato sul PC che esegue la conversione.
+Se non viene trovato nella posizione standard, l'importatore chiede di indicare
+vectorcraft.exe e ricorda la scelta separatamente per ogni utente/PC.
+I font utilizzati dal documento devono essere disponibili anche sul PC usato.
+
+Uso:
+1. Selezionare il file FreeHand e la cartella dei risultati.
+2. Scegliere VectorCraft e premere Importa FreeHand.
+3. Al termine premere Apri in VectorCraft.
+
+Il programma e esterno: non va caricato da File > Script di VectorCraft.
+VectorCraft 0.22.0 controlla gli script Illustrator ma non li esegue.
+Non e ancora un plugin che aggiunge FreeHand al menu Apri di VectorCraft.
+
+Il file originale viene solo letto. I risultati usano nuove cartelle.
+I temporanei sono locali al PC, non nella cartella condivisa del programma.
+La cartella predefinita dei risultati e FreeHand Importer/output nel proprio
+profilo utente; puo essere cambiata nella finestra dell'importatore.
+
+Limiti del prototipo:
+- Per impostazione predefinita ogni box rimane una casella modificabile con gli a capo del file.
+- L'opzione Separa le righe crea oggetti distinti per ciascuna riga.
+- Colori, effetti, immagini, font e impaginazione richiedono un controllo visivo.
+- La variante AI esportata da VectorCraft puo avere testo convertito in tracciati.
+- Questa compilazione e per Windows x64; non e una versione macOS o Windows x86.
+
+In caso di errore di avvio, i dettagli sono salvati in
+%LOCALAPPDATA%\FreeHandImporter\ultimo-errore.txt.
